@@ -1,0 +1,59 @@
+<html><head><title>Test Report</title></head><body>
+<h1>Test Report - 2025-05-29 12:25:07.231737</h1>
+<p>Total: 3, Passed: 2, Failed: 1</p>
+<table border='1'><tr><th>Test</th><th>Status</th><th>Error</th></tr>
+<tr><td>BC script</td><td>Passed</td><td><pre></pre></td></tr>
+<tr><td>Login script</td><td>Failed</td><td><pre>Traceback (most recent call last):
+  File "C:\Users\waniaaslam\Downloads\agrierp-selenium 2\agrierp-selenium 2\main.py", line 80, in run_report
+  File "C:\Users\waniaaslam\Downloads\agrierp-selenium 2\agrierp-selenium 2\main.py", line 22, in run_login
+    # Add a short delay to ensure login is complete
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "login.py", line 15, in <module>
+    driver = get_driver()
+             ^^^^^^^^^^^^
+  File "C:\Users\waniaaslam\Downloads\agrierp-selenium 2\agrierp-selenium 2\shared_driver.py", line 78, in get_driver
+    driver_instance = webdriver.Chrome(
+                      ^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\site-packages\seleniumwire\webdriver.py", line 218, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\waniaaslam\AppData\Roaming\Python\Python312\site-packages\selenium\webdriver\chrome\webdriver.py", line 45, in __init__
+    super().__init__(
+  File "C:\Users\waniaaslam\AppData\Roaming\Python\Python312\site-packages\selenium\webdriver\chromium\webdriver.py", line 56, in __init__
+    super().__init__(
+  File "C:\Users\waniaaslam\AppData\Roaming\Python\Python312\site-packages\selenium\webdriver\remote\webdriver.py", line 208, in __init__
+    self.start_session(capabilities)
+  File "C:\Users\waniaaslam\AppData\Roaming\Python\Python312\site-packages\selenium\webdriver\remote\webdriver.py", line 292, in start_session
+    response = self.execute(Command.NEW_SESSION, caps)["value"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\waniaaslam\AppData\Roaming\Python\Python312\site-packages\selenium\webdriver\remote\webdriver.py", line 347, in execute
+    self.error_handler.check_response(response)
+  File "C:\Users\waniaaslam\AppData\Roaming\Python\Python312\site-packages\selenium\webdriver\remote\errorhandler.py", line 229, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.SessionNotCreatedException: Message: session not created: Chrome failed to start: crashed.
+  (session not created: DevToolsActivePort file doesn't exist)
+  (The process started from chrome location C:\Program Files\Google\Chrome\Application\chrome.exe is no longer running, so ChromeDriver is assuming that Chrome has crashed.)
+Stacktrace:
+	GetHandleVerifier [0x00007FF6C653CF45+75717]
+	GetHandleVerifier [0x00007FF6C653CFA0+75808]
+	(No symbol) [0x00007FF6C6308F9A]
+	(No symbol) [0x00007FF6C6345D55]
+	(No symbol) [0x00007FF6C6341ADD]
+	(No symbol) [0x00007FF6C63952D8]
+	(No symbol) [0x00007FF6C63948B0]
+	(No symbol) [0x00007FF6C6387153]
+	(No symbol) [0x00007FF6C6350421]
+	(No symbol) [0x00007FF6C63511B3]
+	GetHandleVerifier [0x00007FF6C683D71D+3223453]
+	GetHandleVerifier [0x00007FF6C6837CC2+3200322]
+	GetHandleVerifier [0x00007FF6C6855AF3+3322739]
+	GetHandleVerifier [0x00007FF6C6556A1A+180890]
+	GetHandleVerifier [0x00007FF6C655E11F+211359]
+	GetHandleVerifier [0x00007FF6C6545294+109332]
+	GetHandleVerifier [0x00007FF6C6545442+109762]
+	GetHandleVerifier [0x00007FF6C652BA59+4825]
+	BaseThreadInitThunk [0x00007FF92A5C259D+29]
+	RtlUserThreadStart [0x00007FF92AA6AF38+40]
+
+</pre></td></tr>
+<tr><td>Workorder script</td><td>Passed</td><td><pre></pre></td></tr>
+</table></body></html>
