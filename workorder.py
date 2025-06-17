@@ -11,6 +11,7 @@ import io
 from shared_driver import get_driver
 from workorder_util import plot_selection_and_save
 from selenium.common.exceptions import StaleElementReferenceException
+import test_reporter
 
 print("Starting workorder operations...")
 

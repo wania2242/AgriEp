@@ -6,6 +6,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException, NoSuchElementException, StaleElementReferenceException
+import test_reporter
 
 # --- Configuration ---
 EMAIL = "f3admin@circlepfarms.onmicrosoft.com"
@@ -27,263 +28,270 @@ def start_driver():
 
 def login(driver):
     """Handle login, including email, password, and 2FA with TOTP."""
-    driver.get(LOGIN_URL)
-    wait = WebDriverWait(driver, 10)
-
-    # Enter email
     try:
+        driver.get(LOGIN_URL)
+        wait = WebDriverWait(driver, 10)
+
+        # Enter email
         wait.until(EC.visibility_of_element_located((By.ID, "i0116"))).send_keys(EMAIL)
         wait.until(EC.element_to_be_clickable((By.ID, "idSIButton9"))).click()
-    except TimeoutException:
-        wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "input[type='email']"))).send_keys(EMAIL)
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[type='submit']"))).click()
 
-    # Enter password
-    wait.until(EC.visibility_of_element_located((By.ID, "i0118"))).send_keys(PASSWORD)
-    wait.until(EC.element_to_be_clickable((By.ID, "idSIButton9"))).click()
+        # Enter password
+        wait.until(EC.visibility_of_element_located((By.ID, "i0118"))).send_keys(PASSWORD)
+        wait.until(EC.element_to_be_clickable((By.ID, "idSIButton9"))).click()
 
-    # Handle 2FA
-    time.sleep(2)
-    short_wait = WebDriverWait(driver, 5)
-    try:
-        short_wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), \"I can't use my Microsoft Authenticator app right now\")]"))).click()
-    except TimeoutException:
-        pass
+        # Handle 2FA
+        time.sleep(2)
+        short_wait = WebDriverWait(driver, 5)
+        try:
+            short_wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), \"I can't use my Microsoft Authenticator app right now\")]"))).click()
+        except TimeoutException:
+            pass
 
-    try:
-        short_wait.until(EC.element_to_be_clickable((By.XPATH, "//*[contains(text(), 'Use a verification code')]"))).click()
-    except TimeoutException:
-        pass
+        try:
+            short_wait.until(EC.element_to_be_clickable((By.XPATH, "//*[contains(text(), 'Use a verification code')]"))).click()
+        except TimeoutException:
+            pass
 
-    totp = pyotp.TOTP(TOTP_SECRET).now()
-    wait.until(EC.visibility_of_element_located((By.XPATH, "//input[@type='tel' or @type='text']"))).send_keys(totp)
+        totp = pyotp.TOTP(TOTP_SECRET).now()
+        wait.until(EC.visibility_of_element_located((By.XPATH, "//input[@type='tel' or @type='text']"))).send_keys(totp)
 
-    # Verify
-    try:
-        verify_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='Verify'] | //input[@value='Verify']")))
-        driver.execute_script("arguments[0].scrollIntoView(true);", verify_btn)
-        verify_btn.click()
-    except Exception:
-        elems = driver.find_elements(By.XPATH, "//button[normalize-space()='Verify'] | //input[@value='Verify']")
-        if elems:
-            elems[0].click()
-        else:
-            raise
+        # Verify
+        try:
+            verify_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='Verify'] | //input[@value='Verify']")))
+            driver.execute_script("arguments[0].scrollIntoView(true);", verify_btn)
+            verify_btn.click()
+        except Exception:
+            elems = driver.find_elements(By.XPATH, "//button[normalize-space()='Verify'] | //input[@value='Verify']")
+            if elems:
+                elems[0].click()
+            else:
+                raise
 
-    # Stay signed in
-    try:
-        wait.until(EC.element_to_be_clickable((By.XPATH, "//input[@value='No']"))).click()
-    except:
-        pass
+        # Stay signed in
+        try:
+            wait.until(EC.element_to_be_clickable((By.XPATH, "//input[@value='No']"))).click()
+        except:
+            pass
+
+        test_reporter.log_success("Login completed")
+    except Exception as e:
+        test_reporter.log_failure("Login failed", e)
+        raise
 
 def select_growing_cycle(driver):
     """Select 'GROWING CYCLE' value = 2025."""
-    wait = WebDriverWait(driver, 20)
-
-    # Switch to main iframe and click New
-    wait.until(EC.presence_of_all_elements_located((By.TAG_NAME, 'iframe')))
-    driver.switch_to.frame(driver.find_elements(By.TAG_NAME, 'iframe')[0])
-
     try:
+        wait = WebDriverWait(driver, 20)
+
+        # Switch to main iframe and click New
+        wait.until(EC.presence_of_all_elements_located((By.TAG_NAME, 'iframe')))
+        driver.switch_to.frame(driver.find_elements(By.TAG_NAME, 'iframe')[0])
+
         wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='New']"))).click()
         print("[INFO] Clicked 'New' button.")
-    except Exception:
-        driver.execute_script("document.querySelector('button[aria-label=New]').click();")
-        print("[INFO] Clicked 'New' button via JS.")
 
-    time.sleep(3)
+        time.sleep(3)
 
-    # Switch to iframe containing GROWING CYCLE
-    driver.switch_to.default_content()
-    for iframe in driver.find_elements(By.TAG_NAME, "iframe"):
-        driver.switch_to.frame(iframe)
-        if "GROWING CYCLE" in driver.page_source:
-            print("[INFO] Found iframe with GROWING CYCLE.")
-            break
+        # Switch to iframe containing GROWING CYCLE
         driver.switch_to.default_content()
-
-    try:
-        wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@title='Choose a value for GROWING CYCLE']"))).click()
-        print("[SUCCESS] Clicked GROWING CYCLE button.")
-    except Exception as e:
-        print(f"[ERROR] Could not click GROWING CYCLE button: {e}")
-        return
-
-    # Find iframe containing 2025
-    driver.switch_to.default_content()
-    for attempt in range(10):
-        time.sleep(2)
-        for frm in driver.find_elements(By.TAG_NAME, "iframe"):
-            driver.switch_to.frame(frm)
-            if "2025" in driver.page_source:
-                print("[INFO] Found iframe with '2025'")
+        for iframe in driver.find_elements(By.TAG_NAME, "iframe"):
+            driver.switch_to.frame(iframe)
+            if "GROWING CYCLE" in driver.page_source:
+                print("[INFO] Found iframe with GROWING CYCLE.")
                 break
             driver.switch_to.default_content()
-        else:
-            continue
-        break
-    else:
-        raise Exception("[ERROR] Could not find the dimension value list iframe")
 
-    # Click 2025 row
-    try:
+        wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@title='Choose a value for GROWING CYCLE']"))).click()
+        print("[SUCCESS] Clicked GROWING CYCLE button.")
+
+        # Find iframe containing 2025
+        driver.switch_to.default_content()
+        for attempt in range(10):
+            time.sleep(2)
+            for frm in driver.find_elements(By.TAG_NAME, "iframe"):
+                driver.switch_to.frame(frm)
+                if "2025" in driver.page_source:
+                    print("[INFO] Found iframe with '2025'")
+                    break
+                driver.switch_to.default_content()
+            else:
+                continue
+            break
+        else:
+            raise Exception("[ERROR] Could not find the dimension value list iframe")
+
+        # Click 2025 row
         wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//table[contains(@id,'BusinessGrid')]//tr[.//td[normalize-space()='2025']]")
         )).click()
         print("[SUCCESS] Clicked on '2025'")
-    except Exception as e:
-        print(f"[ERROR] Could not click on 2025 row: {e}")
-        raise
 
-    # Click OK
-    driver.switch_to.default_content()
-    for iframe in driver.find_elements(By.TAG_NAME, "iframe"):
-        driver.switch_to.frame(iframe)
-        if "OK" in driver.page_source:
-            print("[INFO] Found iframe with OK button")
-            break
+        # Click OK
         driver.switch_to.default_content()
+        for iframe in driver.find_elements(By.TAG_NAME, "iframe"):
+            driver.switch_to.frame(iframe)
+            if "OK" in driver.page_source:
+                print("[INFO] Found iframe with OK button")
+                break
+            driver.switch_to.default_content()
 
-    try:
-        ok_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='OK']")))
-        driver.execute_script("arguments[0].scrollIntoView(true);", ok_button)
-        ok_button.click()
-        print("[SUCCESS] Clicked OK")
-        time.sleep(1)
         try:
-            WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='Yes']"))).click()
-            print("[SUCCESS] Confirmed dimension update.")
-        except Exception:
-            print("[INFO] No confirmation popup.")
+            ok_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='OK']")))
+            driver.execute_script("arguments[0].scrollIntoView(true);", ok_button)
+            ok_button.click()
+            print("[SUCCESS] Clicked OK")
+            time.sleep(1)
+            try:
+                WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='Yes']"))).click()
+                print("[SUCCESS] Confirmed dimension update.")
+            except Exception:
+                print("[INFO] No confirmation popup.")
+        except Exception as e:
+            print(f"[ERROR] OK button not clickable: {e}")
+
+        test_reporter.log_success("Select growing cycle completed")
     except Exception as e:
-        print(f"[ERROR] OK button not clickable: {e}")
+        test_reporter.log_failure("Select growing cycle failed", e)
+        raise
 
 def select_grower(driver):
     """Open Grower lookup, select the first row in the dropdown, and confirm."""
-    wait = WebDriverWait(driver, 5)
-
-    # Click Grower lookup (use JS click to avoid overlay intercept)
-    grower_btn = wait.until(EC.presence_of_element_located((By.XPATH, "//a[@title='Choose a value for Grower']")))
     try:
-        grower_btn.click()
-    except ElementClickInterceptedException:
-        driver.execute_script("arguments[0].click();", grower_btn)
-    print("[SUCCESS] Clicked 'Choose a value for Grower'")
+        wait = WebDriverWait(driver, 5)
 
-    # Wait for the dropdown table to appear (no iframe)
-    first_row = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, "//table[contains(@id,'BusinessGrid')]//tr[1]//a[contains(@title,'Select record')]")
-    ))
-    driver.execute_script("arguments[0].scrollIntoView(true);", first_row)
-    driver.execute_script("arguments[0].click();", first_row)
-    print("[SUCCESS] Selected first Grower row via grid row click")
+        # Click Grower lookup (use JS click to avoid overlay intercept)
+        grower_btn = wait.until(EC.presence_of_element_located((By.XPATH, "//a[@title='Choose a value for Grower']")))
+        grower_btn.click()
+        print("[SUCCESS] Clicked 'Choose a value for Grower'")
+
+        # Wait for the dropdown table to appear (no iframe)
+        first_row = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//table[contains(@id,'BusinessGrid')]//tr[1]//a[contains(@title,'Select record')]")
+        ))
+        driver.execute_script("arguments[0].scrollIntoView(true);", first_row)
+        driver.execute_script("arguments[0].click();", first_row)
+        print("[SUCCESS] Selected first Grower row via grid row click")
+
+        test_reporter.log_success("Select grower completed")
+    except Exception as e:
+        test_reporter.log_failure("Select grower failed", e)
+        raise
 
 def grower_site(driver):
-    
-    wait = WebDriverWait(driver, 5)
-
-    # Click Grower lookup (use JS click to avoid overlay intercept)
-    growersite_btn = wait.until(EC.presence_of_element_located((By.XPATH, "//a[@title='Choose a value for Growing Site']")))
     try:
+        wait = WebDriverWait(driver, 5)
+
+        # Click Grower lookup (use JS click to avoid overlay intercept)
+        growersite_btn = wait.until(EC.presence_of_element_located((By.XPATH, "//a[@title='Choose a value for Growing Site']")))
         growersite_btn.click()
-    except ElementClickInterceptedException:
-        driver.execute_script("arguments[0].click();", growersite_btn)
-    print("[SUCCESS] Clicked 'Choose a value for Growing Site'")
-    
-    # Wait for the dropdown table to appear (no iframe)
-    first_row = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, "//table[contains(@id,'BusinessGrid')]//tr[1]//a[contains(@title,'Select record')]")
-    ))
-    driver.execute_script("arguments[0].scrollIntoView(true);", first_row)
-    driver.execute_script("arguments[0].click();", first_row)
-    print("[SUCCESS] Selected first Grower row via grid row click")
+        print("[SUCCESS] Clicked 'Choose a value for Growing Site'")
+        
+        # Wait for the dropdown table to appear (no iframe)
+        first_row = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//table[contains(@id,'BusinessGrid')]//tr[1]//a[contains(@title,'Select record')]")
+        ))
+        driver.execute_script("arguments[0].scrollIntoView(true);", first_row)
+        driver.execute_script("arguments[0].click();", first_row)
+        print("[SUCCESS] Selected first Grower row via grid row click")
+
+        test_reporter.log_success("Select grower site completed")
+    except Exception as e:
+        test_reporter.log_failure("Select grower site failed", e)
+        raise
 
 def grower_area(driver):
-    
-    wait = WebDriverWait(driver, 5)
+    try:
+        wait = WebDriverWait(driver, 5)
 
-    # Click Grower lookup (use JS click to avoid overlay intercept)
-    growerarea_btn = wait.until(EC.presence_of_element_located((By.XPATH, "//a[@title='Choose a value for Growing Area']")))
-    try:
+        # Click Grower lookup (use JS click to avoid overlay intercept)
+        growerarea_btn = wait.until(EC.presence_of_element_located((By.XPATH, "//a[@title='Choose a value for Growing Area']")))
         growerarea_btn.click()
-    except ElementClickInterceptedException:
-        driver.execute_script("arguments[0].click();", growerarea_btn)
-    print("[SUCCESS] Clicked 'Choose a value for Growing Area'")
-    try:
-        JA = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[normalize-space(text())='JA']")))
-        JA.click()
-        print("[SUCCESS] Selected 'JA' from lookup")
-    except NoSuchElementException:
-        print("[ERROR] 'JA' not found in lookup popup")
+        print("[SUCCESS] Clicked 'Choose a value for Growing Area'")
+        try:
+            JA = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[normalize-space(text())='JA']")))
+            JA.click()
+            print("[SUCCESS] Selected 'JA' from lookup")
+        except NoSuchElementException:
+            print("[ERROR] 'JA' not found in lookup popup")
+        except Exception as e:
+            print(f"[ERROR] Unexpected error while selecting 'JA': {e}")
+        time.sleep(2)
+
+        test_reporter.log_success("Select grower area completed")
     except Exception as e:
-        print(f"[ERROR] Unexpected error while selecting 'JA': {e}")
-    time.sleep(2)
+        test_reporter.log_failure("Select grower area failed", e)
+        raise
 
 def grower_plot(driver):
-    wait = WebDriverWait(driver, 5)
-    growerplot_btn = wait.until(EC.presence_of_element_located((By.XPATH, "//a[@title='Choose a value for Growing Plot']")))
-    print(f"[INFO] Found 'Choose a value for Growing Plot' button: {growerplot_btn}, displayed: {growerplot_btn.is_displayed()}, enabled: {growerplot_btn.is_enabled()}")
-
-    # Focus the button
-    driver.execute_script("arguments[0].focus();", growerplot_btn)
-    time.sleep(1)
     try:
+        wait = WebDriverWait(driver, 5)
+        growerplot_btn = wait.until(EC.presence_of_element_located((By.XPATH, "//a[@title='Choose a value for Growing Plot']")))
+        print(f"[INFO] Found 'Choose a value for Growing Plot' button: {growerplot_btn}, displayed: {growerplot_btn.is_displayed()}, enabled: {growerplot_btn.is_enabled()}")
+
+        # Focus the button
+        driver.execute_script("arguments[0].focus();", growerplot_btn)
+        time.sleep(1)
         growerplot_btn.click()
         print("[INFO] Clicked with .click()")
+        # Try dispatching a mousedown event
+        driver.execute_script("arguments[0].dispatchEvent(new MouseEvent('mousedown', {bubbles:true}));", growerplot_btn)
+        print("[INFO] Dispatched mousedown event")
+        time.sleep(2)
+        # Check if dropdown appeared
+        dropdown_present = len(driver.find_elements(By.XPATH, "//table[contains(@id,'BusinessGrid')]//tr")) > 0
+        print(f"[DEBUG] Dropdown present after click: {dropdown_present}")
+        if not dropdown_present:
+            print("[ERROR] Dropdown did not open after clicking the button.")
+        else:
+            try:
+                plot= wait.until(EC.element_to_be_clickable((By.XPATH, "//a[normalize-space(text())='45I034SW']")))
+                plot.click()
+                print("[SUCCESS] Selected '45I034SW' from lookup")
+            except NoSuchElementException:
+                print("[ERROR] '45I034SW' not found in lookup popup")
+            except Exception as e:
+                print(f"[ERROR] Unexpected error while selecting 'CORN YELL': {e}")
+        
+        time.sleep(2)
+
+        test_reporter.log_success("Select grower plot completed")
     except Exception as e:
-        print(f"[WARN] .click() failed: {e}, trying JS click")
-        driver.execute_script("arguments[0].click();", growerplot_btn)
-        print("[INFO] Clicked with JS click")
-    # Try dispatching a mousedown event
-    driver.execute_script("arguments[0].dispatchEvent(new MouseEvent('mousedown', {bubbles:true}));", growerplot_btn)
-    print("[INFO] Dispatched mousedown event")
-    time.sleep(2)
-    # Check if dropdown appeared
-    dropdown_present = len(driver.find_elements(By.XPATH, "//table[contains(@id,'BusinessGrid')]//tr")) > 0
-    print(f"[DEBUG] Dropdown present after click: {dropdown_present}")
-    if not dropdown_present:
-        print("[ERROR] Dropdown did not open after clicking the button.")
-    else:
-        try:
-            plot= wait.until(EC.element_to_be_clickable((By.XPATH, "//a[normalize-space(text())='45I034SW']")))
-            plot.click()
-            print("[SUCCESS] Selected '45I034SW' from lookup")
-        except NoSuchElementException:
-            print("[ERROR] '45I034SW' not found in lookup popup")
-        except Exception as e:
-            print(f"[ERROR] Unexpected error while selecting 'CORN YELL': {e}")
-    
-    time.sleep(2)
+        test_reporter.log_failure("Select grower plot failed", e)
+        raise
 
 def grower_item(driver):
-    wait = WebDriverWait(driver, 5)
-
-    # Click Grower lookup
-    groweritem_btn = wait.until(EC.presence_of_element_located((By.XPATH, "//a[@title='Choose a value for Growing Item No.']")))
     try:
+        wait = WebDriverWait(driver, 5)
+
+        # Click Grower lookup
+        groweritem_btn = wait.until(EC.presence_of_element_located((By.XPATH, "//a[@title='Choose a value for Growing Item No.']")))
         groweritem_btn.click()
-    except ElementClickInterceptedException:
-        driver.execute_script("arguments[0].click();", groweritem_btn)
-    print("[SUCCESS] Clicked 'Choose a value for Growing Item No.'")
+        print("[SUCCESS] Clicked 'Choose a value for Growing Item No.'")
 
-    # Wait for the popup to load and select 'CORN YELL'
-    try:
-        corn_yell_option = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[normalize-space(text())='CORN YELL']")))
-        corn_yell_option.click()
-        print("[SUCCESS] Selected 'CORN YELL' from lookup")
-    except NoSuchElementException:
-        print("[ERROR] 'CORN YELL' not found in lookup popup")
+        # Wait for the popup to load and select 'CORN YELL'
+        try:
+            corn_yell_option = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[normalize-space(text())='CORN YELL']")))
+            corn_yell_option.click()
+            print("[SUCCESS] Selected 'CORN YELL' from lookup")
+        except NoSuchElementException:
+            print("[ERROR] 'CORN YELL' not found in lookup popup")
+        except Exception as e:
+            print(f"[ERROR] Unexpected error while selecting 'CORN YELL': {e}")
+        
+        time.sleep(2)
+
+        test_reporter.log_success("Select grower item completed")
     except Exception as e:
-        print(f"[ERROR] Unexpected error while selecting 'CORN YELL': {e}")
-    
-    time.sleep(2)
+        test_reporter.log_failure("Select grower item failed", e)
+        raise
 
 def enter_value_by_id(driver, element_id, value):
     """
     Enter a value into an input field by its ID, triggering all necessary events.
     """
-    wait = WebDriverWait(driver, 30)
     try:
+        wait = WebDriverWait(driver, 30)
         input_elem = wait.until(EC.visibility_of_element_located((By.ID, element_id)))
         print(f"Element found (id={element_id}):", input_elem.is_displayed(), input_elem.is_enabled())
 
@@ -307,12 +315,15 @@ def enter_value_by_id(driver, element_id, value):
 
         print(f"[SUCCESS] Entered value '{value}' in element with id '{element_id}' and triggered events.")
         time.sleep(2)
+
+        test_reporter.log_success(f"Entered value for {element_id}")
     except Exception as e:
-        print(f"[ERROR] Could not enter value in element with id '{element_id}': {e}")
+        test_reporter.log_failure(f"Enter value for {element_id} failed", e)
+        raise
 
 def click_tasks_line_agri_master(driver):
-    wait = WebDriverWait(driver, 5)  # Increased timeout for potentially slow loading
     try:
+        wait = WebDriverWait(driver, 5)  # Increased timeout for potentially slow loading
         # Step 1: Click "Tasks"
         print("[INFO] Looking for 'Tasks' button...")
         tasks_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[@role='button' and .//span[@title='Tasks']]")))
@@ -415,14 +426,15 @@ def click_tasks_line_agri_master(driver):
         except Exception as e:
             print(f"[ERROR] Clicking 'Back' button failed: {e}")
 
-    except TimeoutException as e:
-        print("[ERROR] Timeout waiting for one of the elements in click_tasks_line_agri_master:", str(e))
+        test_reporter.log_success("Click tasks/line/agri master completed")
     except Exception as e:
-        print("[FATAL] Unexpected error occurred in click_tasks_line_agri_master:", str(e))
-def select_sync_to_farm(driver):
-    wait = WebDriverWait(driver, 5)
+        test_reporter.log_failure("Click tasks/line/agri master failed", e)
+        raise
 
+def select_sync_to_farm(driver):
     try:
+        wait = WebDriverWait(driver, 5)
+
         # Wait for the <select> element using XPath
         dropdown_element = wait.until(EC.presence_of_element_located((
             By.XPATH, "//select[contains(@title, 'In Progress')]"
@@ -436,8 +448,10 @@ def select_sync_to_farm(driver):
 
         print("[SUCCESS] Selected 'Sync to Farm App' from dropdown.")
 
+        test_reporter.log_success("Select sync to farm completed")
     except Exception as e:
-        print(f"[ERROR] Failed to select dropdown option: {e}")
+        test_reporter.log_failure("Select sync to farm failed", e)
+        raise
 
 if __name__ == "__main__":
     driver = start_driver()
@@ -454,7 +468,6 @@ if __name__ == "__main__":
         click_tasks_line_agri_master(driver)
         select_sync_to_farm(driver)
         time.sleep(1)
-        # select_sync_to_farm(driver)
         driver.switch_to.default_content()
     except Exception as e:
         print(f"[FATAL] Script failed: {e}")

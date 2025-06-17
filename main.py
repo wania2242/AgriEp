@@ -1,5 +1,6 @@
 import sys
 import time
+import test_reporter
 
 def run_bc():
     """Run the login script as a function rather than an import"""
@@ -33,7 +34,7 @@ def run_workorder():
 
 def run_scripts():
     try:
-        #run_bc()
+        run_bc()
         # # Run login first
         # print("\n======= STARTING LOGIN PROCESS =======\n")
         run_login()
@@ -63,6 +64,7 @@ def run_scripts():
             # An error occurred, close browser
             print("\nClosing browser session due to error...")
             print("Browser closed.")
+        test_reporter.write_html_report()
 
 if __name__ == "__main__":
     run_scripts()
