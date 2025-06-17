@@ -74,9 +74,9 @@ def login(driver):
         except:
             pass
 
-        test_reporter.log_success("Login completed")
+        test_reporter.log_success("Login completed", source='bc')
     except Exception as e:
-        test_reporter.log_failure("Login failed", e)
+        test_reporter.log_failure("Login failed", e, source='bc')
         raise
 
 def select_growing_cycle(driver):
@@ -150,9 +150,9 @@ def select_growing_cycle(driver):
         except Exception as e:
             print(f"[ERROR] OK button not clickable: {e}")
 
-        test_reporter.log_success("Select growing cycle completed")
+        test_reporter.log_success("Select growing cycle completed", source='bc')
     except Exception as e:
-        test_reporter.log_failure("Select growing cycle failed", e)
+        test_reporter.log_failure("Select growing cycle failed", e, source='bc')
         raise
 
 def select_grower(driver):
@@ -173,9 +173,9 @@ def select_grower(driver):
         driver.execute_script("arguments[0].click();", first_row)
         print("[SUCCESS] Selected first Grower row via grid row click")
 
-        test_reporter.log_success("Select grower completed")
+        test_reporter.log_success("Select grower completed", source='bc')
     except Exception as e:
-        test_reporter.log_failure("Select grower failed", e)
+        test_reporter.log_failure("Select grower failed", e, source='bc')
         raise
 
 def grower_site(driver):
@@ -195,9 +195,9 @@ def grower_site(driver):
         driver.execute_script("arguments[0].click();", first_row)
         print("[SUCCESS] Selected first Grower row via grid row click")
 
-        test_reporter.log_success("Select grower site completed")
+        test_reporter.log_success("Select grower site completed", source='bc')
     except Exception as e:
-        test_reporter.log_failure("Select grower site failed", e)
+        test_reporter.log_failure("Select grower site failed", e, source='bc')
         raise
 
 def grower_area(driver):
@@ -218,9 +218,9 @@ def grower_area(driver):
             print(f"[ERROR] Unexpected error while selecting 'JA': {e}")
         time.sleep(2)
 
-        test_reporter.log_success("Select grower area completed")
+        test_reporter.log_success("Select grower area completed", source='bc')
     except Exception as e:
-        test_reporter.log_failure("Select grower area failed", e)
+        test_reporter.log_failure("Select grower area failed", e, source='bc')
         raise
 
 def grower_plot(driver):
@@ -255,9 +255,9 @@ def grower_plot(driver):
         
         time.sleep(2)
 
-        test_reporter.log_success("Select grower plot completed")
+        test_reporter.log_success("Select grower plot completed", source='bc')
     except Exception as e:
-        test_reporter.log_failure("Select grower plot failed", e)
+        test_reporter.log_failure("Select grower plot failed", e, source='bc')
         raise
 
 def grower_item(driver):
@@ -281,9 +281,9 @@ def grower_item(driver):
         
         time.sleep(2)
 
-        test_reporter.log_success("Select grower item completed")
+        test_reporter.log_success("Select grower item completed", source='bc')
     except Exception as e:
-        test_reporter.log_failure("Select grower item failed", e)
+        test_reporter.log_failure("Select grower item failed", e, source='bc')
         raise
 
 def enter_value_by_id(driver, element_id, value):
@@ -316,9 +316,9 @@ def enter_value_by_id(driver, element_id, value):
         print(f"[SUCCESS] Entered value '{value}' in element with id '{element_id}' and triggered events.")
         time.sleep(2)
 
-        test_reporter.log_success(f"Entered value for {element_id}")
+        test_reporter.log_success(f"Entered value for {element_id}", source='bc')
     except Exception as e:
-        test_reporter.log_failure(f"Enter value for {element_id} failed", e)
+        test_reporter.log_failure(f"Enter value for {element_id} failed", e, source='bc')
         raise
 
 def click_tasks_line_agri_master(driver):
@@ -426,9 +426,9 @@ def click_tasks_line_agri_master(driver):
         except Exception as e:
             print(f"[ERROR] Clicking 'Back' button failed: {e}")
 
-        test_reporter.log_success("Click tasks/line/agri master completed")
+        test_reporter.log_success("Click tasks/line/agri master completed", source='bc')
     except Exception as e:
-        test_reporter.log_failure("Click tasks/line/agri master failed", e)
+        test_reporter.log_failure("Click tasks/line/agri master failed", e, source='bc')
         raise
 
 def select_sync_to_farm(driver):
@@ -448,9 +448,9 @@ def select_sync_to_farm(driver):
 
         print("[SUCCESS] Selected 'Sync to Farm App' from dropdown.")
 
-        test_reporter.log_success("Select sync to farm completed")
+        test_reporter.log_success("Select sync to farm completed", source='bc')
     except Exception as e:
-        test_reporter.log_failure("Select sync to farm failed", e)
+        test_reporter.log_failure("Select sync to farm failed", e, source='bc')
         raise
 
 if __name__ == "__main__":

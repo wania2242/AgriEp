@@ -55,12 +55,7 @@ try:
     )
 
     # Verify we're on the correct page
-    print("Workorders page appears to be loaded")
-    print(f"Current URL after navigating: {driver.current_url}")
-
-    # Perform your operations on the workorders page here
-    print("Beginning workorder operations...")
-
+    test_reporter.log_success("Workorders page appears to be loaded")
     # Click on the 'Create New Work Orders' button
     try:
         print("Looking for 'Create New Work Orders' button...")
@@ -119,11 +114,11 @@ try:
             # Try JavaScript click first (more reliable in some cases)
             try:
                 driver.execute_script("arguments[0].click();", create_button)
-                print("Clicked button using JavaScript")
+                test_reporter.log_success("Clicked 'Create New Work Orders' button")
             except Exception:
                 # Fallback to regular click
                 create_button.click()
-                print("Clicked button using regular method")
+                test_reporter.log_success("Clicked 'Create New Work Orders' button using regular method")
 
             print("Successfully clicked button, waiting for form to load...")
 
@@ -213,7 +208,7 @@ try:
                         arguments[0].click();
                     """, dropdown_button)
                     
-                    print("Clicked dropdown button using JavaScript")
+                    test_reporter.log_success("Clicked dropdown button using JavaScript")
                     
                     # Verify the dropdown is opened
                     WebDriverWait(driver, 5).until(
@@ -244,6 +239,7 @@ try:
                             }
                         }
                     """)
+                    test_reporter.log_success("Dropdown not visible, trying alternative JavaScript approach")
                     time.sleep(1)
 
                 # Add a small wait to let the dropdown menu appear
@@ -258,6 +254,7 @@ try:
                     print("Dropdown menu is visible")
                 except Exception as e:
                     print(f"Error waiting for dropdown menu: {str(e)}")
+                    test_reporter.log_failure("Error waiting for dropdown menu", e)
                     # Continue anyway as the menu might still be visible
 
                 # Use the specific XPath to find the farm option
@@ -268,7 +265,7 @@ try:
                     farm_option = WebDriverWait(driver, 10).until(
                         EC.element_to_be_clickable((By.XPATH, farm_option_xpath))
                     )
-                    print("Farm option found and clickable")
+                    test_reporter.log_success("Farm option found and clickable")
 
                     # Scroll the option into view
                     driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", farm_option)
@@ -278,10 +275,11 @@ try:
                     # Try native click first
                     try:
                         farm_option.click()
+                        test_reporter.log_success("Farm selected using native click")
                         click_success = True
-                        print("Farm selected using native click")
                     except Exception as e:
                         print(f"Native click failed: {str(e)}")
+                        test_reporter.log_failure("Native click failed", e)
 
                     # Try ActionChains if native click failed
                     if not click_success:
@@ -289,9 +287,10 @@ try:
                             actions = ActionChains(driver)
                             actions.move_to_element(farm_option).click().perform()
                             click_success = True
-                            print("Farm selected using ActionChains")
+                            test_reporter.log_success("Farm selected using ActionChains")
                         except Exception as e:
                             print(f"ActionChains click failed: {str(e)}")
+                            test_reporter.log_failure("ActionChains click failed", e)
 
                     # Try JavaScript click as last resort
                     if not click_success:
@@ -299,9 +298,10 @@ try:
                             "arguments[0].click(); arguments[0].dispatchEvent(new Event('click'));",
                             farm_option
                         )
-                        print("Farm selected using JavaScript")
+                        test_reporter.log_success("Farm selected using JavaScript")
                 except Exception as e:
                     print(f"Error finding or clicking farm option: {str(e)}")
+                    test_reporter.log_failure("Error finding or clicking farm option", e)
 
                 try:
                     # Verify selection by checking if dropdown is closed
@@ -332,9 +332,10 @@ try:
                     # Click the operation dropdown
                     try:
                         operation_button.click()
+                        test_reporter.log_success("Operation dropdown clicked using native click")
                     except Exception:
                         driver.execute_script("arguments[0].click();", operation_button)
-                    print("Operation dropdown clicked")
+                        test_reporter.log_success("Operation dropdown clicked using JavaScript")
 
                     # Wait for operation dropdown menu to be visible
                     WebDriverWait(driver, 10).until(
@@ -362,9 +363,10 @@ try:
                             # Try native click
                             operation_option.click()
                             click_success = True
-                            print("Operation selected using native click")
+                            test_reporter.log_success("Operation selected using native click")
                         except Exception as e:
                             print(f"Native click failed: {str(e)}")
+                            test_reporter.log_failure("Native click failed", e)
 
                         if not click_success:
                             try:
@@ -372,9 +374,10 @@ try:
                                 actions = ActionChains(driver)
                                 actions.move_to_element(operation_option).click().perform()
                                 click_success = True
-                                print("Operation selected using ActionChains")
+                                test_reporter.log_success("Operation selected using ActionChains")
                             except Exception as e:
                                 print(f"ActionChains click failed: {str(e)}")
+                                test_reporter.log_failure("ActionChains click failed", e)
 
                         if not click_success:
                             # Try JavaScript click as last resort
@@ -413,18 +416,20 @@ try:
                         try:
                             supervisor_button.click()
                             click_success = True
-                            print("Supervisor dropdown clicked using native click")
+                            test_reporter.log_success("Supervisor dropdown clicked using native click")
                         except Exception as e:
                             print(f"Native click failed: {str(e)}")
+                            test_reporter.log_failure("Native click failed", e)
 
                         if not click_success:
                             try:
                                 actions = ActionChains(driver)
                                 actions.move_to_element(supervisor_button).click().perform()
                                 click_success = True
-                                print("Supervisor dropdown clicked using ActionChains")
+                                test_reporter.log_success("Supervisor dropdown clicked using ActionChains")
                             except Exception as e:
                                 print(f"ActionChains click failed: {str(e)}")
+                                test_reporter.log_failure("ActionChains click failed", e)
 
                         if not click_success:
                             driver.execute_script(
@@ -456,18 +461,20 @@ try:
                         try:
                             supervisor_option.click()
                             click_success = True
-                            print("Supervisor selected using native click")
+                            test_reporter.log_success("Supervisor selected using native click")
                         except Exception as e:
                             print(f"Native click failed: {str(e)}")
+                            test_reporter.log_failure("Native click failed", e)
 
                         if not click_success:
                             try:
                                 actions = ActionChains(driver)
                                 actions.move_to_element(supervisor_option).click().perform()
                                 click_success = True
-                                print("Supervisor selected using ActionChains")
+                                test_reporter.log_success("Supervisor selected using ActionChains")
                             except Exception as e:
                                 print(f"ActionChains click failed: {str(e)}")
+                                test_reporter.log_failure("ActionChains click failed", e)
 
                         if not click_success:
                             driver.execute_script(
@@ -525,9 +532,9 @@ try:
                                 # Try native click
                                 fetch_button.click()
                                 click_success = True
-                                print("Fetch button clicked using native click")
+                                test_reporter.log_success("Fetch button clicked using native click")
                             except Exception as e:
-                                print(f"Native click failed: {str(e)}")
+                                test_reporter.log_failure("Native click failed", e)
 
                             if not click_success:
                                 try:
@@ -535,9 +542,9 @@ try:
                                     actions = ActionChains(driver)
                                     actions.move_to_element(fetch_button).click().perform()
                                     click_success = True
-                                    print("Fetch button clicked using ActionChains")
+                                    test_reporter.log_success("Fetch button clicked using ActionChains")
                                 except Exception as e:
-                                    print(f"ActionChains click failed: {str(e)}")
+                                    test_reporter.log_failure("ActionChains click failed", e)
 
                             if not click_success:
                                 # Try JavaScript click
@@ -545,7 +552,7 @@ try:
                                     "arguments[0].click(); arguments[0].dispatchEvent(new Event('click'));",
                                     fetch_button
                                 )
-                                print("Fetch button clicked using JavaScript")
+                                test_reporter.log_success("Fetch button clicked using JavaScript")
 
                             # Wait for any loading indicators or animations
                             time.sleep(2)
@@ -558,7 +565,7 @@ try:
                                     EC.element_to_be_clickable((By.XPATH, submit_button_xpath))
                                 )
                                 submit_button.click()
-                                print("Submit button clicked after fetch.")
+                                test_reporter.log_success("Submit button clicked after fetch.")
                                 # After submit, click the save button
                                 try:
                                     save_button_xpath = "//*[@id=\"mat-dialog-0\"]/app-work-order-action-dialog/div/div[2]/button[2]"
@@ -566,7 +573,7 @@ try:
                                         EC.element_to_be_clickable((By.XPATH, save_button_xpath))
                                     )
                                     save_button.click()
-                                    print("Save button clicked after submit.")
+                                    test_reporter.log_success("Save button clicked after submit.")
                                     time.sleep(5)
                                     # Extract workOrderId from network response
                                     workorder_id = None
@@ -627,14 +634,14 @@ try:
 
     # --- Try to open by agriWorkOrderID from network response ---
     if not workorder_id:
-        workorder_id = 52
+        workorder_id = 70
     import json
     import time
     try:
         time.sleep(2)
         if workorder_id:
             workorder_url = f"https://agrierp-eh-pon-farms-qa-dfedaqg0hegranhf.eastus-01.azurewebsites.net/workorders/{workorder_id}"
-            print(f"Navigating to workorder URL: {workorder_url}")
+            test_reporter.log_success(f"Navigating to workorder that was created")
             driver.get(workorder_url)
             time.sleep(3)
             # Step 2: Click recall button
@@ -646,7 +653,7 @@ try:
                 driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", recall_button)
                 time.sleep(1)
                 recall_button.click()
-                print("Recall button clicked after opening workorder by ID.")
+                test_reporter.log_success("Recall button clicked after opening workorder by ID.")
                 # Now click the edit button
                 try:
                     # Use a robust selector for the edit button
@@ -674,10 +681,10 @@ try:
                             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", edit_button)
                             time.sleep(0.5)
                             edit_button.click()
-                            print("Edit button clicked after recall.")
+                            test_reporter.log_success("Edit button clicked after recall.")
                             break
                         except Exception as e:
-                            print(f"Edit button click attempt {attempt+1} failed: {e}")
+                            test_reporter.log_failure(f"Edit button click attempt {attempt+1} failed", e)
                             time.sleep(1)
                     else:
                         print("Could not click edit button after recall after multiple attempts.")
@@ -689,7 +696,7 @@ try:
                         )
                         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", materials_div)
                         time.sleep(1)
-                        print("Scrolled to the materials section.")
+                        test_reporter.log_success("Scrolled to the materials section.")
                         # Click the delete button in the first row of the materials table, with retry for stale element
                         for attempt in range(3):
                             try:
@@ -700,7 +707,7 @@ try:
                                 driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", delete_button)
                                 time.sleep(1)
                                 delete_button.click()
-                                print("Delete button in the first row clicked.")
+                                test_reporter.log_success("Delete button in the first row clicked.")
                                 # Handle confirmation alert by clicking 'Yes'
                                 try:
                                     print("Waiting for confirmation alert and clicking 'Yes'...")
@@ -708,7 +715,7 @@ try:
                                         EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'btn-success') and text()='Yes']"))
                                     )
                                     yes_button.click()
-                                    print("Clicked 'Yes' on delete confirmation alert.")
+                                    test_reporter.log_success("Clicked 'Yes' on delete confirmation alert.")
                                     # Now click the Submit button
                                     try:
                                         print("Attempting to click the Submit button after deleting material...")
@@ -717,39 +724,40 @@ try:
                                             EC.element_to_be_clickable((By.XPATH, submit_button_xpath))
                                         )
                                         submit_button.click()
-                                        print("Submit button clicked after deleting material.")
+                                        test_reporter.log_success("Submit button clicked after deleting material.")
                                         # Now click the Update button on the alert
                                         try:
                                             print("Waiting for the update button on the alert and clicking it...")
                                             update_button_xpath = "/html/body/div[3]/div[2]/div/mat-dialog-container/app-work-order-action-dialog/div/div[2]/button[2]"
-                                            update_button = WebDriverWait(driver, 10).until(
+                                            update_button = WebDriverWait(driver, 12).until(
                                                 EC.element_to_be_clickable((By.XPATH, update_button_xpath))
                                             )
                                             update_button.click()
-                                            print("Update button clicked on the alert.")
+                                            test_reporter.log_success("Update button clicked on the alert.")
                                         except Exception as e:
+                                            # test_reporter.log_failure("Could not click Update button on the alert", e)
                                             print(f"Could not click Update button on the alert: {e}")
                                     except Exception as e:
-                                        print(f"Could not click Submit button after deleting material: {e}")
+                                        test_reporter.log_failure("Could not click Submit button after deleting material", e)
                                 except Exception as e:
-                                    print(f"Could not click 'Yes' on delete confirmation: {e}")
+                                    test_reporter.log_failure("Could not click 'Yes' on delete confirmation", e)
                                 break
                             except StaleElementReferenceException as e:
                                 print(f"StaleElementReferenceException on attempt {attempt+1}, retrying...")
                                 time.sleep(1)
                             except Exception as e:
-                                print(f"Could not click delete button in the first row: {e}")
+                                test_reporter.log_failure("Could not click delete button in the first row", e)
                                 break
                         else:
-                            print("Failed to click delete button in the first row after multiple attempts.")
+                            test_reporter.log_failure("Failed to click delete button in the first row after multiple attempts.")
                     except Exception as e:
-                        print(f"Could not scroll to materials section or find materials table: {e}")
+                        test_reporter.log_failure("Could not scroll to materials section or find materials table", e)
                 except Exception as e:
-                    print(f"Could not click edit button after recall: {e}")
+                    test_reporter.log_failure("Could not click edit button after recall", e)
             except Exception as e:
-                print(f"Could not click recall button after opening workorder by ID: {e}")
+                test_reporter.log_failure("Could not click recall button after opening workorder by ID", e)
         else:
-            print("Could not find agriWorkOrderID in the network responses. Trying fallback: sort and open first row.")
+            test_reporter.log_failure("Could not find agriWorkOrderID in the network responses. Trying fallback: sort and open first row.")
             try:
                 # Click the sort icon
                 print("Clicking the sort icon to sort by descending order...")

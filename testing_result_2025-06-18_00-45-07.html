@@ -1,0 +1,350 @@
+<link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    html, body {
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+        background: linear-gradient(120deg, #e3f0ff 0%, #f8fafc 100%);
+        overflow: hidden;
+    }
+    body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .header {
+        width: 100vw;
+        background: rgba(25, 118, 210, 0.95);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 0 0 0 12px;
+        height: 38px;
+        box-shadow: 0 2px 12px rgba(25, 118, 210, 0.08);
+        letter-spacing: 1px;
+        flex-shrink: 0;
+    }
+    .logo {
+        width: 24px;
+        height: 24px;
+        background: #fff;
+        border-radius: 50%;
+        margin-right: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        color: #1976d2;
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(25, 118, 210, 0.10);
+    }
+    .header-title {
+        font-size: 1.02rem;
+        font-weight: 600;
+        letter-spacing: 1.1px;
+        margin: 0;
+    }
+    .summary-section {
+        width: 100vw;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 2px;
+        margin-bottom: 0;
+    }
+    .summary-title {
+        font-size: 0.98rem;
+        font-weight: 600;
+        color: #1976d2;
+        margin-bottom: 2px;
+        letter-spacing: 0.5px;
+    }
+    .chart-container {
+        width: 180px;
+        height: 110px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(25, 118, 210, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 2px;
+        padding: 2px 0 0 0;
+    }
+    .all-tables-section {
+        width: 98vw;
+        max-width: 950px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 2px;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+    .script-table-block {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1.5px 8px rgba(25, 118, 210, 0.04);
+        margin-bottom: 2px;
+        padding: 2px 6px 2px 6px;
+        min-width: 0;
+        min-height: 0;
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+    }
+    .script-title {
+        font-size: 0.93rem;
+        font-weight: 600;
+        color: #1976d2;
+        margin: 2px 0 2px 0;
+        letter-spacing: 0.5px;
+        text-align: left;
+    }
+    table {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        background: #fff;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 0;
+        font-size: 0.89rem;
+        max-height: 100%;
+        display: block;
+        min-width: 0;
+    }
+    thead, tbody {
+        display: block;
+        width: 100%;
+    }
+    tbody {
+        overflow-y: auto;
+        max-height: 13vh;
+        width: 100%;
+    }
+    th, td {
+        padding: 3px 6px;
+        text-align: left;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.89rem;
+    }
+    th {
+        background: linear-gradient(90deg, #1976d2 80%, #42a5f5 100%);
+        color: #fff;
+        font-size: 0.91rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        border: none;
+    }
+    tr {
+        transition: background 0.2s;
+        width: 100%;
+        display: table;
+        table-layout: fixed;
+    }
+    tr:hover {
+        background: #f1f8ff;
+    }
+    .status-success {
+        color: #fff;
+        background: linear-gradient(90deg, #43a047 80%, #66bb6a 100%);
+        border-radius: 3px;
+        padding: 1px 7px;
+        font-weight: 600;
+        display: inline-block;
+        font-size: 0.89em;
+        box-shadow: 0 1px 4px rgba(67,160,71,0.04);
+    }
+    .status-failure {
+        color: #fff;
+        background: linear-gradient(90deg, #e53935 80%, #ff7043 100%);
+        border-radius: 3px;
+        padding: 1px 7px;
+        font-weight: 600;
+        display: inline-block;
+        font-size: 0.89em;
+        box-shadow: 0 1px 4px rgba(229,57,53,0.04);
+    }
+    .source-bc { background: #e3f2fd; }
+    .source-login { background: #e8f5e9; }
+    .source-workorder { background: #fff3e0; }
+    .source-unknown { background: #f5f5f5; }
+    .nowrap { white-space: nowrap; }
+    pre {
+        margin: 0;
+        font-size: 0.89em;
+        color: #b71c1c;
+        background: #fbe9e7;
+        border-radius: 2px;
+        padding: 1px 2px;
+        max-width: 80px;
+        overflow-x: auto;
+        font-family: 'Fira Mono', 'Consolas', monospace;
+    }
+    .footer {
+        width: 100vw;
+        background: #1976d2;
+        color: #fff;
+        text-align: right;
+        font-size: 0.91rem;
+        padding: 2px 12px 2px 0;
+        letter-spacing: 0.5px;
+        box-shadow: 0 -2px 12px rgba(25, 118, 210, 0.08);
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 22px;
+        line-height: 18px;
+        flex-shrink: 0;
+    }
+</style>
+<div class="header">
+    <div class="logo">AE</div>
+    <div class="header-title">Automation Testing Report</div>
+</div>
+<div class="summary-section">
+    <div class="summary-title">Test Summary</div>
+    <div class="chart-container">
+        <canvas id="summaryChart" width="160" height="90"></canvas>
+    </div>
+</div>
+<div class="all-tables-section">
+    <div class="script-table-block">
+        <div class="script-title">BC Script</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class='source-bc'><td>Login completed</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-bc'><td>Select growing cycle completed</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-bc'><td>Select grower completed</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-bc'><td>Select grower site completed</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-bc'><td>Select grower area completed</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-bc'><td>Select grower plot completed</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-bc'><td>Select grower item completed</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-bc'><td>Entered value for blyee</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-bc'><td>Entered value for bm4ee</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-bc'><td>Click tasks/line/agri master completed</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-bc'><td>Select sync to farm completed</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="script-table-block">
+        <div class="script-title">Login Script</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class='source-login'><td>Login button clicked.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-login'><td>Email field submitted</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-login'><td>Password entered and submitted</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-login'><td>Entered authentication code</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-login'><td>Clicked verification submit button</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-login'><td>Clicked 'Stay signed in' prompt</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="script-table-block">
+        <div class="script-title">Workorder Script</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class='source-workorder'><td>Workorders page appears to be loaded</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Clicked 'Create New Work Orders' button</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Clicked dropdown button using JavaScript</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Farm option found and clickable</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Farm selected using native click</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Operation dropdown clicked using native click</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Operation selected using native click</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Supervisor dropdown clicked using native click</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Supervisor selected using native click</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Plot selection button clicked.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Plot checkbox clicked.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Plot Save button clicked after plot selection.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Fetch button clicked using native click</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Submit button clicked after fetch.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Save button clicked after submit.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Navigating to workorder that was created</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Recall button clicked after opening workorder by ID.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Edit button clicked after recall.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Scrolled to the materials section.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Delete button in the first row clicked.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Clicked 'Yes' on delete confirmation alert.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+                <tr class='source-workorder'><td>Submit button clicked after deleting material.</td><td><span class='status-success'>Success</span></td><td><pre></pre></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="footer">
+    Generated: 2025-06-18 00:45:07 &nbsp; | &nbsp; Presented by Wania Aslam
+</div>
+<script>
+window.onload = function() {
+    const ctx = document.getElementById('summaryChart').getContext('2d');
+    const data = {
+        labels: ['BC Script', 'Login Script', 'Workorder Script'],
+        datasets: [{
+            label: 'Passed',
+            data: [11, 6, 22],
+            backgroundColor: [
+                'rgba(33, 150, 243, 0.85)',
+                'rgba(76, 175, 80, 0.85)',
+                'rgba(255, 167, 38, 0.85)'
+            ],
+            borderColor: [
+                'rgba(33, 150, 243, 1)',
+                'rgba(76, 175, 80, 1)',
+                'rgba(255, 167, 38, 1)'
+            ],
+            borderWidth: 2
+        }]
+    };
+    new Chart(ctx, {
+        type: 'pie',
+        data: data,
+        options: {
+            responsive: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        font: { size: 10, family: 'Inter' }
+                    }
+                },
+                title: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+</script>
