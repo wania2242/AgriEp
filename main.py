@@ -32,6 +32,13 @@ def run_workorder():
         exec(workorder_code, globals())
     print("Workorder script completed successfully.")
 
+def run_mob():
+    print("Running mob script...")
+    with open('mob.py', 'r') as f:
+        mob_code = compile(f.read(), 'mob.py', 'exec')
+        exec(mob_code, globals())
+    print("mob script completed successfully.")
+
 def run_scripts():
     try:
         run_bc()
@@ -46,6 +53,8 @@ def run_scripts():
         # Then run workorder
         print("\n======= STARTING WORKORDER PROCESS =======\n")
         run_workorder()
+        print("\n======= STARTING MOB PROCESS =======\n")
+        run_mob()
         
     except Exception as e:
         print(f"\nError occurred: {e}")

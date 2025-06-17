@@ -1,2 +1,5 @@
 pytest
 pytest-html
+Appium-Python-Client==2.11.1
+selenium==4.11.2
+playwright==1.40.0
