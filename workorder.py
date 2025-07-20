@@ -407,44 +407,102 @@ class WorkOrderManager:
     
     def _handle_delete_confirmation(self) -> bool:
         """Handle the delete confirmation alert."""
-        try:
-            yes_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'btn-success') and text()='Yes']"))
-            )
-            yes_button.click()
-            logger.info("Clicked 'Yes' on delete confirmation")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to handle delete confirmation: {e}")
-            return False
+        return self.element_utils.click_dialog_button("Yes", timeout=10)
     
     def _submit_changes(self) -> bool:
         """Submit changes after deleting material."""
         try:
-            submit_button_xpath = "/html/body/app-root/app-default-layout/div/app-aside/div/app-f3-aside-panel/div/app-planned-operations/div/div[1]/div/div/button"
-            submit_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, submit_button_xpath))
-            )
-            submit_button.click()
-            logger.info("Submit button clicked after deleting material")
-            return True
+            # Wait for any animations to complete
+            time.sleep(2)
+            
+            # Try multiple selectors for the submit button
+            submit_button_selectors = [
+                (By.XPATH, "/html/body/app-root/app-default-layout/div/app-aside/div/app-f3-aside-panel/div/app-planned-operations/div/div[1]/div/div/button"),
+                (By.XPATH, "//button[contains(text(), 'Submit')]"),
+                (By.XPATH, "//button[contains(@class, 'btn-primary') and contains(text(), 'Submit')]"),
+                (By.XPATH, "//app-planned-operations//button[contains(text(), 'Submit')]"),
+                (By.XPATH, "//div[contains(@class, 'planned-operations')]//button")
+            ]
+            
+            submit_button = None
+            for selector in submit_button_selectors:
+                try:
+                    submit_button = WebDriverWait(self.driver, 5).until(
+                        EC.element_to_be_clickable(selector)
+                    )
+                    logger.info(f"Found submit button with selector: {selector[1]}")
+                    break
+                except Exception:
+                    continue
+            
+            if not submit_button:
+                logger.error("Submit button not found with any selector")
+                return False
+            
+            # Scroll button into view
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_button)
+            time.sleep(1)
+            
+            # Try multiple click methods
+            click_success = False
+            
+            # Method 1: Native click
+            try:
+                submit_button.click()
+                click_success = True
+                logger.info("Submit button clicked using native click")
+            except Exception as e:
+                logger.warning(f"Native click failed: {e}")
+            
+            # Method 2: JavaScript click
+            if not click_success:
+                try:
+                    self.driver.execute_script("arguments[0].click();", submit_button)
+                    click_success = True
+                    logger.info("Submit button clicked using JavaScript")
+                except Exception as e:
+                    logger.warning(f"JavaScript click failed: {e}")
+            
+            # Method 3: ActionChains
+            if not click_success:
+                try:
+                    from selenium.webdriver.common.action_chains import ActionChains
+                    actions = ActionChains(self.driver)
+                    actions.move_to_element(submit_button).click().perform()
+                    click_success = True
+                    logger.info("Submit button clicked using ActionChains")
+                except Exception as e:
+                    logger.warning(f"ActionChains click failed: {e}")
+            
+            if click_success:
+                logger.info("Submit button clicked successfully after deleting material")
+                return True
+            else:
+                logger.error("All click methods failed for submit button")
+                return False
+                
         except Exception as e:
             logger.error(f"Failed to submit changes: {e}")
             return False
     
     def _update_workorder(self) -> bool:
         """Click the update button on the alert."""
-        try:
-            update_button_xpath = "/html/body/div[3]/div[2]/div/mat-dialog-container/app-work-order-action-dialog/div/div[2]/button[2]"
-            update_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, update_button_xpath))
-            )
-            update_button.click()
-            logger.info("Update button clicked on alert")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to update workorder: {e}")
-            return False
+        # Wait a bit for the dialog to fully appear
+        time.sleep(2)
+        
+        # Try multiple button texts that might appear
+        update_button_texts = ["Update", "Save", "OK", "Confirm"]
+        
+        for button_text in update_button_texts:
+            if self.element_utils.click_dialog_button(button_text, timeout=5):
+                logger.info(f"Successfully clicked '{button_text}' button")
+                return True
+        
+        logger.error("Could not click any update/save button in dialog")
+        # Save debug information
+        self.browser_utils.save_screenshot("update_button_not_found.png")
+        self.browser_utils.save_page_source("update_button_not_found.html")
+        return False
 
 
 def main():

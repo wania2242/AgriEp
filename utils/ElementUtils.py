@@ -209,3 +209,77 @@ class ElementUtils:
             except Exception as e:
                 logger.warning(f"Error finding elements with pattern '{pattern}': {e}")
         return elements
+    
+    def click_dialog_button(self, button_text: str, timeout: int = 10) -> bool:
+        """Click a button in a dialog by text content."""
+        try:
+            # Wait for dialog to be present
+            WebDriverWait(self.driver, timeout).until(
+                EC.presence_of_element_located((By.XPATH, "//div[@role='dialog'] | //mat-dialog-container"))
+            )
+            
+            # Try multiple selectors for dialog buttons
+            button_selectors = [
+                (By.XPATH, f"//button[contains(text(), '{button_text}')]"),
+                (By.XPATH, f"//mat-dialog-container//button[contains(text(), '{button_text}')]"),
+                (By.XPATH, f"//div[@role='dialog']//button[contains(text(), '{button_text}')]"),
+                (By.XPATH, f"//app-work-order-action-dialog//button[contains(text(), '{button_text}')]"),
+                (By.XPATH, f"//button[contains(@class, 'btn-primary') and contains(text(), '{button_text}')]"),
+                (By.XPATH, f"//button[contains(@class, 'btn-success') and contains(text(), '{button_text}')]")
+            ]
+            
+            button = None
+            for selector in button_selectors:
+                try:
+                    button = WebDriverWait(self.driver, 5).until(
+                        EC.element_to_be_clickable(selector)
+                    )
+                    logger.info(f"Found dialog button '{button_text}' with selector: {selector[1]}")
+                    break
+                except Exception:
+                    continue
+            
+            if not button:
+                logger.error(f"Dialog button '{button_text}' not found")
+                return False
+            
+            # Scroll button into view
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", button)
+            time.sleep(1)
+            
+            # Try multiple click methods
+            click_success = False
+            
+            # Method 1: Native click
+            try:
+                button.click()
+                click_success = True
+                logger.info(f"Dialog button '{button_text}' clicked using native click")
+            except Exception as e:
+                logger.warning(f"Native click failed: {e}")
+            
+            # Method 2: JavaScript click
+            if not click_success:
+                try:
+                    self.driver.execute_script("arguments[0].click();", button)
+                    click_success = True
+                    logger.info(f"Dialog button '{button_text}' clicked using JavaScript")
+                except Exception as e:
+                    logger.warning(f"JavaScript click failed: {e}")
+            
+            # Method 3: ActionChains
+            if not click_success:
+                try:
+                    from selenium.webdriver.common.action_chains import ActionChains
+                    actions = ActionChains(self.driver)
+                    actions.move_to_element(button).click().perform()
+                    click_success = True
+                    logger.info(f"Dialog button '{button_text}' clicked using ActionChains")
+                except Exception as e:
+                    logger.warning(f"ActionChains click failed: {e}")
+            
+            return click_success
+            
+        except Exception as e:
+            logger.error(f"Failed to click dialog button '{button_text}': {e}")
+            return False
