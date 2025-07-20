@@ -1,348 +1,22 @@
 from shared_driver import get_driver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.remote.webelement import WebElement
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 import time
 import os
-import pickle
-import datetime
-import json
-import shutil
-import pyotp
 from dotenv import load_dotenv
-from typing import Optional, List, Tuple, Dict, Any, Union
+from typing import List, Tuple, Dict, Any
 import logging
-
+from utils.BrowserUtils import BrowserUtils
+from utils.ElementUtils import ElementUtils
+from utils.RetryMechanism import RetryMechanism
+from utils.FormUtils import FormUtils
+from utils.AuthenticationUtils import AuthenticationUtils
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-
-
-class BrowserUtils:
-    """Generic browser utility functions for navigation and window management."""
-    
-    def __init__(self, driver):
-        self.driver = driver
-        self.wait = WebDriverWait(driver, 10)
-    
-    def navigate_to_url(self, url: str, timeout: int = 10) -> bool:
-        """Navigate to a URL with error handling."""
-        try:
-            self.driver.get(url)
-            logger.info(f"Successfully navigated to: {url}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to navigate to {url}: {e}")
-            return False
-    
-    def wait_for_url_contains(self, url_part: str, timeout: int = 10) -> bool:
-        """Wait for URL to contain specific text."""
-        try:
-            self.wait.until(EC.url_contains(url_part))
-            logger.info(f"URL now contains: {url_part}")
-            return True
-        except TimeoutException:
-            logger.warning(f"URL did not contain '{url_part}' within {timeout} seconds")
-            return False
-    
-    def switch_to_new_window(self, original_handle: str, timeout: int = 10) -> bool:
-        """Switch to a new window that opened after the original handle."""
-        try:
-            self.wait.until(lambda d: len(d.window_handles) > 1)
-            for handle in self.driver.window_handles:
-                if handle != original_handle:
-                    self.driver.switch_to.window(handle)
-                    logger.info(f"Switched to new window: {self.driver.current_url}")
-                    return True
-            return False
-        except TimeoutException:
-            logger.warning("No new window opened within timeout")
-            return False
-    
-    def switch_to_window_by_url_contains(self, url_part: str) -> bool:
-        """Switch to window containing specific URL part."""
-        for handle in self.driver.window_handles:
-            self.driver.switch_to.window(handle)
-            if url_part in self.driver.current_url:
-                logger.info(f"Switched to window with URL containing: {url_part}")
-                return True
-        return False
-    
-    def save_screenshot(self, filename: str) -> bool:
-        """Save screenshot for debugging."""
-        try:
-            self.driver.save_screenshot(filename)
-            logger.info(f"Screenshot saved: {filename}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to save screenshot {filename}: {e}")
-            return False
-    
-    def save_page_source(self, filename: str) -> bool:
-        """Save page source for debugging."""
-        try:
-            with open(filename, "w", encoding="utf-8") as f:
-                f.write(self.driver.page_source)
-            logger.info(f"Page source saved: {filename}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to save page source {filename}: {e}")
-            return False
-
-
-class ElementUtils:
-    """Generic element interaction utilities."""
-    
-    def __init__(self, driver):
-        self.driver = driver
-        self.wait = WebDriverWait(driver, 10)
-    
-    def find_element_with_fallback(self, selectors: List[Tuple[str, str]], timeout: int = 10) -> Optional[WebElement]:
-        """Find element using multiple selectors as fallback."""
-        for by_method, selector in selectors:
-            try:
-                element = self.wait.until(EC.presence_of_element_located((by_method, selector)))
-                logger.info(f"Found element with selector: {by_method}={selector}")
-                return element
-            except TimeoutException:
-                continue
-        logger.warning(f"Element not found with any selector: {selectors}")
-        return None
-    
-    def find_clickable_element(self, selectors: List[Tuple[str, str]], timeout: int = 10) -> Optional[WebElement]:
-        """Find clickable element using multiple selectors as fallback."""
-        for by_method, selector in selectors:
-            try:
-                element = self.wait.until(EC.element_to_be_clickable((by_method, selector)))
-                logger.info(f"Found clickable element with selector: {by_method}={selector}")
-                return element
-            except TimeoutException:
-                continue
-        logger.warning(f"Clickable element not found with any selector: {selectors}")
-        return None
-    
-    def click_element(self, element: WebElement, verify_click: bool = True, 
-                     verification_url: str = None, verification_title: str = None) -> bool:
-        """Click element with optional verification."""
-        try:
-            current_url = self.driver.current_url
-            current_title = self.driver.title
-            
-            element.click()
-            logger.info("Element clicked successfully")
-            
-            if verify_click:
-                time.sleep(2)  # Wait for potential changes
-                if (verification_url and self.driver.current_url != verification_url) or \
-                   (verification_title and verification_title not in self.driver.title) or \
-                   (not verification_url and not verification_title and 
-                    (self.driver.current_url != current_url or current_title != self.driver.title)):
-                    logger.info("Click verified successful - page changed")
-                    return True
-                else:
-                    logger.warning("Click reported success but page didn't change")
-                    return False
-            return True
-        except Exception as e:
-            logger.error(f"Failed to click element: {e}")
-            return False
-    
-    def fill_input_field(self, element: WebElement, value: str, clear_first: bool = True) -> bool:
-        """Fill input field with value."""
-        try:
-            if clear_first:
-                element.clear()
-            element.send_keys(value)
-            logger.info(f"Filled input field with value: {value[:10]}...")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to fill input field: {e}")
-            return False
-    
-    def submit_form(self, element: WebElement) -> bool:
-        """Submit form by sending RETURN key."""
-        try:
-            element.send_keys(Keys.RETURN)
-            logger.info("Form submitted with RETURN key")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to submit form: {e}")
-            return False
-    
-    def find_elements_by_text_pattern(self, text_patterns: List[str]) -> List[WebElement]:
-        """Find elements containing any of the specified text patterns."""
-        elements = []
-        for pattern in text_patterns:
-            try:
-                found = self.driver.find_elements(By.XPATH, f"//*[contains(text(), '{pattern}')]")
-                elements.extend(found)
-            except Exception as e:
-                logger.warning(f"Error finding elements with pattern '{pattern}': {e}")
-        return elements
-
-
-class FormUtils:
-    """Generic form filling utilities."""
-    
-    def __init__(self, driver):
-        self.driver = driver
-        self.element_utils = ElementUtils(driver)
-    
-    def fill_email_field(self, email: str, selectors: List[Tuple[str, str]] = None) -> bool:
-        """Fill email field with generic selectors."""
-        if selectors is None:
-            selectors = [
-                (By.ID, "i0116"),
-                (By.CSS_SELECTOR, "input[name='loginfmt']"),
-                (By.CSS_SELECTOR, "input[type='email']"),
-                (By.CSS_SELECTOR, "input[type='text']")
-            ]
-        
-        email_input = self.element_utils.find_element_with_fallback(selectors, timeout=30)
-        if not email_input:
-            self._debug_input_elements()
-            return False
-        
-        if not self.element_utils.fill_input_field(email_input, email):
-            return False
-        
-        return self.element_utils.submit_form(email_input)
-    
-    def fill_password_field(self, password: str, selectors: List[Tuple[str, str]] = None) -> bool:
-        """Fill password field with generic selectors."""
-        if selectors is None:
-            selectors = [
-                (By.ID, "i0118"),
-                (By.CSS_SELECTOR, "input[type='password']"),
-                (By.CSS_SELECTOR, "input[name='passwd']")
-            ]
-        
-        password_input = self.element_utils.find_element_with_fallback(selectors, timeout=10)
-        if not password_input:
-            return False
-        
-        if not self.element_utils.fill_input_field(password_input, password):
-            return False
-        
-        return self.element_utils.submit_form(password_input)
-    
-    def _debug_input_elements(self):
-        """Debug helper to list all input elements on page."""
-        try:
-            inputs = self.driver.find_elements(By.TAG_NAME, "input")
-            logger.info(f"Found {len(inputs)} input elements on page:")
-            for inp in inputs:
-                logger.info({
-                    "id": inp.get_attribute("id"),
-                    "name": inp.get_attribute("name"),
-                    "type": inp.get_attribute("type"),
-                    "placeholder": inp.get_attribute("placeholder")
-                })
-        except Exception as e:
-            logger.error(f"Error listing input elements: {e}")
-
-
-class AuthenticationUtils:
-    """Generic authentication utilities including OTP/TOTP handling."""
-    
-    def __init__(self, driver):
-        self.driver = driver
-        self.element_utils = ElementUtils(driver)
-        self.browser_utils = BrowserUtils(driver)
-    
-    def handle_totp_verification(self, totp_secret: str, 
-                                otp_selectors: List[Tuple[str, str]] = None,
-                                submit_selectors: List[Tuple[str, str]] = None) -> bool:
-        """Handle TOTP verification with generic selectors."""
-        if otp_selectors is None:
-            otp_selectors = [
-                (By.ID, "idTxtBx_SAOTCC_OTC"),
-                (By.CSS_SELECTOR, "input[type='text']"),
-                (By.CSS_SELECTOR, "input[name='otc']")
-            ]
-        
-        if submit_selectors is None:
-            submit_selectors = [
-                (By.XPATH, "//input[@type='submit']"),
-                (By.CSS_SELECTOR, "button[type='submit']"),
-                (By.XPATH, "//button[contains(text(), 'Verify')]")
-            ]
-        
-        # Check if we're on a verification page
-        verification_keywords = ['verification', 'code', 'authenticator', 'OTP', '2FA']
-        verify_elements = self.element_utils.find_elements_by_text_pattern(verification_keywords)
-        
-        if not verify_elements:
-            logger.info("No verification page detected")
-            return True
-        
-        logger.info("Detected verification page, handling TOTP")
-        self.browser_utils.save_screenshot("verification_page.png")
-        
-        # Generate TOTP code
-        try:
-            totp = pyotp.TOTP(totp_secret)
-            auth_code = totp.now()
-            logger.info(f"Generated TOTP code: {auth_code}")
-        except Exception as e:
-            logger.error(f"Failed to generate TOTP code: {e}")
-            return False
-        
-        # Find and fill OTP input
-        otp_input = self.element_utils.find_element_with_fallback(otp_selectors, timeout=10)
-        if not otp_input:
-            logger.error("OTP input field not found")
-            self.browser_utils.save_screenshot("otp_page_not_found.png")
-            return False
-        
-        if not self.element_utils.fill_input_field(otp_input, auth_code):
-            return False
-        
-        # Find and click submit button
-        submit_btn = self.element_utils.find_clickable_element(submit_selectors, timeout=5)
-        if not submit_btn:
-            logger.error("OTP submit button not found")
-            return False
-        
-        if not self.element_utils.click_element(submit_btn):
-            return False
-        
-        time.sleep(3)  # Wait for submission
-        
-        # Handle "Stay signed in" prompt
-        self._handle_stay_signed_in_prompt()
-        
-        return True
-    
-    def _handle_stay_signed_in_prompt(self):
-        """Handle 'Stay signed in' prompt that may appear after OTP."""
-        yes_button_selectors = [
-            (By.ID, "idSIButton9"),
-            (By.XPATH, "//button[contains(text(), 'Yes')]"),
-            (By.XPATH, "//input[@value='Yes']"),
-            (By.XPATH, "//button[contains(@class, 'primary')]")
-        ]
-        
-        for by_method, selector in yes_button_selectors:
-            try:
-                yes_button = WebDriverWait(self.driver, 3).until(
-                    EC.element_to_be_clickable((by_method, selector))
-                )
-                logger.info(f"Found 'Stay signed in' prompt, clicking: {selector}")
-                yes_button.click()
-                time.sleep(2)
-                break
-            except TimeoutException:
-                continue
-
-
 class LoginFlowManager:
-    """Main login flow manager that orchestrates the entire login process."""
+    """Main login flow manager that orchestrates the entire login process with robust error handling."""
     
     def __init__(self, driver, config: Dict[str, Any]):
         self.driver = driver
@@ -351,12 +25,17 @@ class LoginFlowManager:
         self.element_utils = ElementUtils(driver)
         self.form_utils = FormUtils(driver)
         self.auth_utils = AuthenticationUtils(driver)
+        self.retry_mechanism = RetryMechanism(max_retries=3, base_delay=2.0, max_delay=15.0)
     
     def execute_login_flow(self) -> bool:
-        """Execute the complete login flow."""
+        """Execute the complete login flow with robust error handling."""
         try:
-            # Step 1: Navigate to login URL
-            if not self.browser_utils.navigate_to_url(self.config['login_url']):
+            # Step 1: Navigate to login URL with retry
+            navigation_success = self.retry_mechanism.execute_with_retry(
+                lambda: self.browser_utils.navigate_to_url(self.config['login_url']),
+                "Navigation to login URL"
+            )
+            if not navigation_success:
                 return False
             
             # Step 2: Check if already logged in
@@ -364,20 +43,36 @@ class LoginFlowManager:
                 logger.info("Already logged in, skipping login steps")
                 return True
             
-            # Step 3: Initiate login process
-            if not self._initiate_login():
+            # Step 3: Initiate login process with retry
+            login_init_success = self.retry_mechanism.execute_with_retry(
+                self._initiate_login,
+                "Login initiation"
+            )
+            if not login_init_success:
                 return False
             
-            # Step 4: Handle authentication window
-            if not self._handle_auth_window():
+            # Step 4: Handle authentication window with retry
+            auth_window_success = self.retry_mechanism.execute_with_retry(
+                self._handle_auth_window,
+                "Authentication window handling"
+            )
+            if not auth_window_success:
                 return False
             
-            # Step 5: Fill credentials
-            if not self._fill_credentials():
+            # Step 5: Fill credentials with retry
+            credentials_success = self.retry_mechanism.execute_with_retry(
+                self._fill_credentials,
+                "Credentials filling"
+            )
+            if not credentials_success:
                 return False
             
-            # Step 6: Handle sign-in and verification
-            if not self._handle_sign_in_and_verification():
+            # Step 6: Handle sign-in and verification with retry
+            sign_in_success = self.retry_mechanism.execute_with_retry(
+                self._handle_sign_in_and_verification,
+                "Sign-in and verification"
+            )
+            if not sign_in_success:
                 return False
             
             # Step 7: Verify successful login
@@ -385,6 +80,9 @@ class LoginFlowManager:
             
         except Exception as e:
             logger.error(f"Login flow failed: {e}")
+            # Save debug information
+            self.browser_utils.save_screenshot("login_failure.png")
+            self.browser_utils.save_page_source("login_failure.html")
             return False
     
     def _is_already_logged_in(self) -> bool:
@@ -392,7 +90,10 @@ class LoginFlowManager:
         return "/login" not in self.driver.current_url
     
     def _initiate_login(self) -> bool:
-        """Click login button to initiate the login process."""
+        """Click login button to initiate the login process with robust waiting."""
+        # Wait for page to be fully loaded before looking for login button
+        self.browser_utils.robust_wait.wait_for_page_load(timeout=10)
+        
         login_button_selectors = [
             (By.CLASS_NAME, "btn-login"),
             (By.CSS_SELECTOR, "button[class*='login']"),
@@ -400,19 +101,28 @@ class LoginFlowManager:
             (By.XPATH, "//a[contains(text(), 'Login')]")
         ]
         
-        login_button = self.element_utils.find_clickable_element(login_button_selectors, timeout=3)
+        login_button = self.element_utils.find_clickable_element(login_button_selectors, timeout=15)
         if not login_button:
             logger.warning("Login button not found")
             return False
         
-        if not self.element_utils.click_element(login_button, verify_click=False):
+        # Click with verification that something happened
+        if not self.element_utils.click_element(login_button, verify_click=True):
             return False
         
-        logger.info("Login button clicked")
+        logger.info("Login button clicked successfully")
         return True
     
     def _handle_auth_window(self) -> bool:
-        """Handle authentication window (same window or popup)."""
+        """Handle authentication window (same window or popup) with robust waiting."""
+        # Wait for page transition after login button click
+        self.browser_utils.robust_wait.wait_for_page_transition(timeout=15)
+        
+        # Try same window first
+        if self.browser_utils.wait_for_url_contains("login.microsoftonline.com", timeout=10):
+            logger.info("MS login page loaded in same window")
+            return True
+        
         # Try new window
         original_handle = self.driver.current_window_handle
         if self.browser_utils.switch_to_new_window(original_handle, timeout=10):
@@ -422,30 +132,61 @@ class LoginFlowManager:
         return False
     
     def _fill_credentials(self) -> bool:
-        """Fill email and password fields."""
-        # Fill email
-        if not self.form_utils.fill_email_field(self.config['email']):
+        """Fill email and password fields with robust waiting."""
+        # Wait for page to be stable before filling credentials
+        self.browser_utils.robust_wait.wait_for_page_load(timeout=10)
+        
+        # Fill email with retry
+        email_success = self.retry_mechanism.execute_with_retry(
+            lambda: self.form_utils.fill_email_field(self.config['email']),
+            "Email field filling"
+        )
+        if not email_success:
             logger.error("Failed to fill email field")
             return False
         
-        # Fill password
-        if not self.form_utils.fill_password_field(self.config['password']):
+        # Wait for password field to appear
+        time.sleep(2)
+        
+        # Fill password with retry
+        password_success = self.retry_mechanism.execute_with_retry(
+            lambda: self.form_utils.fill_password_field(self.config['password']),
+            "Password field filling"
+        )
+        if not password_success:
             logger.error("Failed to fill password field")
             return False
         
         return True
     
-    def _handle_sign_in_and_verification(self) -> bool:
-        """Handle sign-in button and any verification required."""
-        # Try to click sign-in button
-        sign_in_selectors = [
-            (By.ID, "idSIButton9"),
-            (By.XPATH, "//button[contains(text(), 'Sign in')]"),
-            (By.XPATH, "//input[@type='submit']")
-        ]
+    def _handle_sign_in_and_verification(self, click_sign_in_button: bool = False) -> bool:
+        """Handle sign-in button and any verification required with robust waiting."""
+        # Wait for page to be stable before looking for sign-in button
+        self.browser_utils.robust_wait.wait_for_page_load(timeout=10)
+        
+        # Try to click sign-in button with retry
+        if click_sign_in_button:
+            sign_in_selectors = [
+                (By.ID, "idSIButton9"),
+                (By.XPATH, "//button[contains(text(), 'Sign in')]"),
+                (By.XPATH, "//input[@type='submit']")
+            ]
+            
+            sign_in_success = self.retry_mechanism.execute_with_retry(
+                lambda: self._click_sign_in_button(sign_in_selectors),
+                "Sign-in button clicking"
+            )
+            
+            if not sign_in_success:
+                logger.warning("Sign-in button not found or failed to click")
+        
         # Handle TOTP if configured
         if 'totp_secret' in self.config:
-            if not self.auth_utils.handle_totp_verification(self.config['totp_secret']):
+            totp_success = self.retry_mechanism.execute_with_retry(
+                lambda: self.auth_utils.handle_totp_verification(self.config['totp_secret']),
+                "TOTP verification"
+            )
+            if not totp_success:
                 logger.error("TOTP verification failed")
                 return False
         
@@ -455,6 +196,14 @@ class LoginFlowManager:
                 logger.warning("Could not switch back to main application window")
         
         return True
+    
+    def _click_sign_in_button(self, selectors: List[Tuple[str, str]]) -> bool:
+        """Helper method to click sign-in button."""
+        sign_in_button = self.element_utils.find_clickable_element(selectors, timeout=15)
+        if not sign_in_button:
+            return False
+        
+        return self.element_utils.click_element(sign_in_button, verify_click=True)
     
     def _verify_successful_login(self) -> bool:
         """Verify that login was successful."""
@@ -484,6 +233,7 @@ def main():
     
     if success:
         logger.info("Login completed successfully")
+        time.sleep(10)
     else:
         logger.error("Login failed")
     
