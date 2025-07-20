@@ -6,9 +6,9 @@ from seleniumwire import webdriver
 # 1)  CONFIGURE WHERE THE SOURCE PROFILE LIVES
 # ───────────────────────────────────────────────
 SRC_ROOT      = pathlib.Path(
-    r"C:\Users\waniaaslam\AppData\Local\Google\Chrome\User Data"
+    r"/Users/muhammadshahzaib/Library/Application Support/Google/Chrome"
 )
-PROFILE_NAME  = "Profile 1"                # the folder that already trusts Selenium-Wire’s CA
+PROFILE_NAME  = "Profile 2"                # the folder that already trusts Selenium-Wire’s CA
 # ───────────────────────────────────────────────
 # 2)  BUILD A CLEAN TEMPORARY COPY (no sockets)
 # ───────────────────────────────────────────────

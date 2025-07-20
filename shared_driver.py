@@ -57,8 +57,8 @@ def clear_chrome_session(user_data_dir: str | pathlib.Path, profile_name: str):
 
     print(f"✓ Cleared session data in {root}")
 
-USER_DATA_DIR = Path(r"C:\Users\WANIAA~1\AppData\Local\Temp\sw-user-data-yda917uh")
-PROFILE_NAME  = "Profile 1"          # the same folder you copied earlier
+USER_DATA_DIR = Path(r"/var/folders/8x/ry2vbrc56wv9tqqtfp0bdww80000gp/T/sw-user-data-pq3khzrl")
+PROFILE_NAME  = "Profile 2"          # the same folder you copied earlier
 
 driver_instance = None
 clear_chrome_session(USER_DATA_DIR, PROFILE_NAME)
