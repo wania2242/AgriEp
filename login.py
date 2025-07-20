@@ -5,11 +5,14 @@ import os
 from dotenv import load_dotenv
 from typing import List, Tuple, Dict, Any
 import logging
-from utils.BrowserUtils import BrowserUtils
-from utils.ElementUtils import ElementUtils
-from utils.RetryMechanism import RetryMechanism
-from utils.FormUtils import FormUtils
-from utils.AuthenticationUtils import AuthenticationUtils
+from utils import (
+    BrowserUtils,
+    ElementUtils, 
+    RetryMechanism,
+    FormUtils,
+    AuthenticationUtils,
+    ConfigUtils
+)
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -21,11 +24,20 @@ class LoginFlowManager:
     def __init__(self, driver, config: Dict[str, Any]):
         self.driver = driver
         self.config = config
+        
+        # Load configuration for timeouts and retry settings
+        retry_config = ConfigUtils.get_retry_config()
+        timeout_config = ConfigUtils.get_timeout_config()
+        
         self.browser_utils = BrowserUtils(driver)
         self.element_utils = ElementUtils(driver)
         self.form_utils = FormUtils(driver)
         self.auth_utils = AuthenticationUtils(driver)
-        self.retry_mechanism = RetryMechanism(max_retries=3, base_delay=2.0, max_delay=15.0)
+        self.retry_mechanism = RetryMechanism(
+            max_retries=retry_config['max_retries'],
+            base_delay=retry_config['base_delay'],
+            max_delay=retry_config['max_delay']
+        )
     
     def execute_login_flow(self) -> bool:
         """Execute the complete login flow with robust error handling."""
@@ -214,13 +226,13 @@ class LoginFlowManager:
 
 def create_login_config() -> Dict[str, Any]:
     """Create login configuration from environment variables."""
-    return {
-        'login_url': os.getenv("FARM_APP_LOGIN_URL"),
-        'email': os.getenv("FARM_APP_EMAIL"),
-        'password': os.getenv("FARM_APP_PASSWORD"),
-        'totp_secret': os.getenv("FARM_APP_TOTP_SECRET"),
-        'target_url': os.getenv("FARM_APP_LOGIN_URL")  # Use login URL as target for verification
-    }
+    config = ConfigUtils.load_env_config()
+    
+    if not ConfigUtils.validate_config(config):
+        logger.error("Invalid configuration - missing required fields")
+        return {}
+    
+    return config
 
 
 def main():
